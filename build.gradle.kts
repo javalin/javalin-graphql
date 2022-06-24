@@ -74,7 +74,7 @@ dependencies {
     testImplementation("com.konghq", "unirest-java", "3.13.8")
     testImplementation("org.slf4j", "slf4j-simple", "1.7.36")
     testImplementation("javax.servlet", "javax.servlet-api", "3.1.0")
-    testImplementation("org.java-websocket:Java-WebSocket:1.3.7")
+    testImplementation("org.java-websocket:Java-WebSocket:1.5.3")
     testImplementation("io.projectreactor:reactor-core:3.4.19")
 }
 

@@ -3,6 +3,7 @@ package io.javalin.plugin.graphql
 import io.javalin.Javalin
 import io.javalin.core.plugin.Plugin
 import io.javalin.core.plugin.PluginLifecycleInit
+import io.javalin.core.util.JavalinLogger.info
 import io.javalin.plugin.graphql.server.JavalinGraphQLServer
 import kotlinx.coroutines.runBlocking
 import org.eclipse.jetty.http.HttpStatus
@@ -34,6 +35,10 @@ class GraphQLPlugin(private val builder: GraphQLPluginBuilder<*>) : Plugin, Plug
         }
         app.ws(builder.path) { ws ->
             ws.onMessage { ctx -> graphQLHandler.execute(ctx) }
+            ws.onError { ctx ->
+                error("GraphQL Error WebSocket -> ${ctx.error()?.message}")
+                error(ctx.error()?.stackTrace as Any)
+            }
         }
     }
 

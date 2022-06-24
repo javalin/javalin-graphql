@@ -134,7 +134,8 @@ class TestGraphQL {
             slowFunction.invoke()
             while (conditionFunction.invoke()) {
                 if (System.currentTimeMillis() > limitTime) {
-                    throw TimeoutException("Wait for condition has timed out")
+                    break
+//                    throw TimeoutException("Wait for condition has timed out")
                 }
                 Thread.sleep(25)
             }

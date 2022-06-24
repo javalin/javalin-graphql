@@ -4,6 +4,8 @@ import graphql.ExceptionWhileDataFetching
 import graphql.ExecutionInput
 import graphql.ExecutionResult
 import graphql.GraphQL
+import kotlinx.coroutines.reactive.asFlow
+import kotlinx.coroutines.reactive.collect
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
 import java.util.concurrent.CompletableFuture
@@ -63,5 +65,12 @@ class GraphQLRun(private val graphql: GraphQL) {
             .execute(action)
             .getData<Publisher<ExecutionResult>>()
             .subscribe(subscriber)
+    }
+
+    fun subscribe(): Publisher<ExecutionResult> {
+        val action = generateAction()
+        return graphql
+            .execute(action)
+            .getData()
     }
 }

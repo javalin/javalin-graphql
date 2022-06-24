@@ -2,6 +2,7 @@ package io.javalin.plugin.graphql
 
 import io.javalin.plugin.graphql.graphql.GraphQLRun
 import io.javalin.websocket.WsMessageContext
+import kotlinx.coroutines.reactive.collect
 import kotlinx.coroutines.runBlocking
 
 class GraphQLHandler(private val graphQLBuilder: GraphQLPluginBuilder<*>) {
@@ -13,15 +14,19 @@ class GraphQLHandler(private val graphQLBuilder: GraphQLPluginBuilder<*>) {
         val operationName = body["operationName"]?.toString()
         val context = runBlocking { graphQLBuilder.contextWsFactory.generateContext(ctx) }
 
-        GraphQLRun(graphQLBuilder.getSchema())
-            .withQuery(query)
-            .withVariables(variables)
-            .withOperationName(operationName)
-            .withContext(context)
-            .subscribe(SubscriberGraphQL(ctx))
+        runBlocking {
+            GraphQLRun(graphQLBuilder.getSchema())
+                .withQuery(query)
+                .withVariables(variables)
+                .withOperationName(operationName)
+                .withContext(context)
+                .subscribe()
+                .collect {
+                    ctx.send(it.getData<Any>())
+                }
+        }
     }
 
     private fun getVariables(body: Map<*, *>) =
         if (body["variables"] == null) emptyMap() else body["variables"] as Map<String, Any>
-
 }

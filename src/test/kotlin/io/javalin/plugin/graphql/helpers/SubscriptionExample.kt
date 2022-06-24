@@ -10,7 +10,7 @@ class SubscriptionExample : SubscriptionGraphql {
         const val anonymous_message = "anonymus"
     }
 
-    fun counter(): Flux<Int> = Flux.interval(Duration.ofSeconds(1)).map { 1 }
+    fun counter(): Flux<Int> = Flux.just(1)
 
     fun counterUser(contextExample: ContextExample?) = Flux.interval(Duration.ofSeconds(1))
         .map {
