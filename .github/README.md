@@ -10,6 +10,117 @@
 * Chat on Discord: https://discord.gg/sgak4e5NKv
 * License summary: https://tldrlegal.com/license/apache-license-2.0-(apache-2.0)
 
-## About this plugin
+## Javalin GraphQL
 
-Add stuff here
+This plugin allows implementing the [GraphQL specification](https://graphql.org)
+with some easy steps.
+
+### Getting Started
+
+Add the dependencies:
+
+<details>
+    <summary>Gradle setup for Javalin 4.x</summary>
+
+```groovy
+implementation("io.javalin:javalin-redoc-plugin:$openapi")
+```
+
+</details>
+
+
+<details>
+    <summary>Maven setup for Javalin 4.x</summary>
+
+```xml
+<dependency>
+    <groupId>io.javalin</groupId>
+    <artifactId>javalin-graphql</artifactId>
+    <version>4.6.3</version>
+</dependency>
+```
+
+</details>
+
+Register the plugin:
+
+```kotlin
+val app = Javalin.create {
+    val graphQLOption = GraphQLOptions("/graphql", ContextExample())
+            .addPackage("io.javalin.examples")
+            .register(QueryExample(message))
+            .register(MutationExample(message))
+            .register(SubscriptionExample())
+            .context()
+    it.registerPlugin(GraphQLPlugin(graphQLOption))
+}
+
+app.start()
+```
+
+The GraphQL is now available under the `/graphql` endpoint.
+
+### Create Query
+
+This section contains an overview of all the available to create queries.
+
+```kotlin
+@GraphQLDescription("Query Example")
+class QueryExample : QueryGraphql {
+    fun hello(): String = "Hello world"
+
+    fun demoData(@GraphQLDescription("awesome input") data: DemoData): DemoData = data
+}
+```
+
+After creating this class is necessary to register the class at the start of the plugin.
+
+### Create Command
+
+This section contains an overview of all the available to create commands.
+
+```kotlin
+@GraphQLDescription("Command Example")
+class CommandExample : CommandGraphql {
+    fun hello(): String = "Hello world"
+
+    fun demoData(@GraphQLDescription("awesome input") data: DemoData): DemoData = data
+}
+```
+
+After creating this class is necessary to register the class at the start of the plugin.
+
+### Create Subscription
+
+This section contains an overview of all the available to create a subscription.
+
+```kotlin
+@GraphQLDescription("Subscription Example")
+class SubscriptionExample: SubscriptionGraphql {
+    fun counter(): Flux<Int> = Flux.interval(Duration.ofMillis(100)).map { 1 }
+}
+```
+
+After creating this class is necessary to register the class at the start of the plugin.
+
+### Pass context
+
+Sometimes it is necessary to pass the context in the method. You can create this context with this class.
+
+```kotlin
+class ContextExample {
+    val globalEnvironment = "globalEnvironment"
+}
+```
+
+After creating this class is necessary to register the class at the start of the plugin.
+
+Then is possible to access this context with this annotation @GraphQLContext.
+
+```kotlin
+class QueryExample() : QueryGraphql {
+    fun context(@GraphQLContext context: ContextExample): ContextExample {
+        return context
+    }
+}
+```
