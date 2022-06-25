@@ -63,7 +63,7 @@ publishing {
 }
 
 dependencies {
-    implementation("io.javalin", "javalin", "4.6.3")
+    implementation("io.javalin", "javalin", "5.0.0-SNAPSHOT")
     implementation("com.expediagroup", "graphql-kotlin-server", "5.5.0")
     implementation("com.expediagroup", "graphql-kotlin-schema-generator", "5.5.0")
 
@@ -72,7 +72,7 @@ dependencies {
     testImplementation("org.junit.jupiter", "junit-jupiter-api", "5.7.2")
     testImplementation("org.assertj", "assertj-core", "3.20.2")
     testImplementation("com.konghq", "unirest-java", "3.13.8")
-    testImplementation("org.slf4j", "slf4j-simple", "1.7.36")
+    testImplementation("org.slf4j:slf4j-simple:2.0.0-alpha7")
     testImplementation("javax.servlet", "javax.servlet-api", "3.1.0")
     testImplementation("org.java-websocket:Java-WebSocket:1.5.3")
     testImplementation("io.projectreactor:reactor-core:3.4.19")

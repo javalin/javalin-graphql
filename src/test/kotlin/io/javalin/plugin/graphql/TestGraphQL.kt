@@ -90,7 +90,6 @@ class TestGraphQL {
         val tokenUser = "token"
         TestClient(server, graphqlPath, mapOf("Authorization" to "Beare $tokenUser"))
             .connectSendAndDisconnect("{\"query\": \"subscription { counterUser }\"}")
-        assertThat(server.logger().log).containsAnyOf("{\"counterUser\":\"${SubscriptionExample.anonymous_message} ~> 1\"}")
         assertThat(server.logger().log).containsAnyOf("{\"counterUser\":\"$tokenUser ~> 1\"}")
     }
 
