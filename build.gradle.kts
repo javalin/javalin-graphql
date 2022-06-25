@@ -9,15 +9,6 @@ apply(plugin = "java-library")
 apply(plugin = "application")
 apply(plugin = "org.jetbrains.kotlin.jvm")
 
-dependencies {
-    val javalin = "5.0.0-SNAPSHOT"
-    compileOnly("io.javalin:javalin:$javalin")
-
-    val junit = "5.7.2"
-    testImplementation("org.junit.jupiter:junit-jupiter-api:$junit")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junit")
-}
-
 group = "io.javalin"
 version = "5.0.0-SNAPSHOT"
 
@@ -70,6 +61,7 @@ dependencies {
     testImplementation("io.javalin", "javalin-testtools", "4.6.3")
 
     testImplementation("org.junit.jupiter", "junit-jupiter-api", "5.7.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.2")
     testImplementation("org.assertj", "assertj-core", "3.20.2")
     testImplementation("com.konghq", "unirest-java", "3.13.8")
     testImplementation("org.slf4j:slf4j-simple:2.0.0-alpha7")
