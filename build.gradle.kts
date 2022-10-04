@@ -54,11 +54,11 @@ publishing {
 }
 
 dependencies {
-    implementation("io.javalin", "javalin", "5.0.0-SNAPSHOT")
+    implementation("io.javalin", "javalin", "5.0.1")
     implementation("com.expediagroup", "graphql-kotlin-server", "5.5.0")
     implementation("com.expediagroup", "graphql-kotlin-schema-generator", "5.5.0")
 
-    testImplementation("io.javalin", "javalin-testtools", "4.6.3")
+    testImplementation("io.javalin", "javalin-testtools", "5.0.1")
 
     testImplementation("org.junit.jupiter", "junit-jupiter-api", "5.7.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.2")

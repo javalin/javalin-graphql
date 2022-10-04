@@ -149,7 +149,7 @@ class TestGraphQL {
     }
 
     private fun shortTimeoutServer(): Javalin {
-        return Javalin.create {
+        return Javalin.create { config ->
             val graphQLPluginBuilder =
                 GraphQLPluginBuilder(graphqlPath, ContextFactoryExample(), ContextWsFactoryExample())
                     .add("io.javalin.plugin.graphql")
@@ -158,7 +158,7 @@ class TestGraphQL {
                     .register(MutationExample(message))
                     .register(SubscriptionExample())
 
-            it.registerPlugin(graphQLPluginBuilder.build())
+            config.plugins.register(graphQLPluginBuilder.build())
         }
     }
 }
