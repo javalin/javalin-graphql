@@ -43,7 +43,7 @@ jobs:
         uses: HardNorth/github-version-generate@v1.1.2
         with:
           version-source: file
-          version-file: build.gradle
+          version-file: build.gradle.kts
           version-file-extraction-pattern: '(?<=version\s*=\s*'')\S+(?='')'
 
       - name: Validate Wrapper
