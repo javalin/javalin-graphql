@@ -38,17 +38,6 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
-
-      - name: Generate version
-        uses: HardNorth/github-version-generate@v1.1.2
-        with:
-          version-source: file
-          version-file: build.gradle.kts
-          version-file-extraction-pattern: '(?<=version\s*=\s*'')\S+(?='')'
-
-      - name: Validate Wrapper
-        uses: gradle/wrapper-validation-action@v1
-
       - name: Publish to Reposilite
         uses: gradle/gradle-build-action@v2.2.1
         env:
@@ -71,59 +60,3 @@ jobs:
           ORG_GRADLE_PROJECT_signingKeyId: '${{ secrets.GPG_KEYID }}'
         with:
           arguments: publishToSonatype closeAndReleaseStagingRepository
-
-      - name: Create Pre-Release
-        if: contains(env.CURRENT_VERSION, 'SNAPSHOT')
-        uses: ncipollo/release-action@v1.10.0
-        with:
-          tag: ${{ env.CURRENT_VERSION }}
-          generateReleaseNotes: true
-          commit: main
-          prerelease: true
-          body: |
-            ## Download Instructions
-            ### Maven
-            ```xml
-            <repository>
-              <id>reposilite-repository-snapshots</id>
-              <name>Reposilite Repository</name>
-              <url>https://maven.reposilite.com/snapshots</url>
-            </repository>
-            ```
-            ```xml
-            <dependency>
-              <groupId>io.javalin.community.graphql</groupId>
-              <artifactId>javalin-graphql</artifactId>
-              <version>${{ env.CURRENT_VERSION }}</version>
-            </dependency>
-            ```
-            ### Gradle
-            ```groovy
-            maven {
-              url "https://maven.reposilite.com/snapshots"
-            }
-            ```
-            ```groovy
-              implementation('io.javalin.community.graphql:javalin-graphql:${{ env.CURRENT_VERSION }}')
-            ```
-      - name: Create Release
-        if: "!contains(env.CURRENT_VERSION, 'SNAPSHOT')"
-        uses: ncipollo/release-action@v1.10.0
-        with:
-          tag: ${{ env.CURRENT_VERSION }}
-          generateReleaseNotes: true
-          commit: main
-          body: |
-            ## Download Instructions
-            ### Maven
-            ```xml
-            <dependency>
-              <groupId>io.javalin.community.graphql</groupId>
-              <artifactId>javalin-graphql</artifactId>
-              <version>${{ env.CURRENT_VERSION }}</version>
-            </dependency>
-            ```
-            ### Gradle
-            ```groovy
-              implementation('io.javalin.community.graphql:javalin-graphql:${{ env.CURRENT_VERSION }}')
-            ```
