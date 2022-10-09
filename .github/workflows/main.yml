@@ -47,7 +47,7 @@ jobs:
           ORG_GRADLE_PROJECT_signingPassword: '${{ secrets.GPG_PASSPHRASE }}'
           ORG_GRADLE_PROJECT_signingKeyId: '${{ secrets.GPG_KEYID }}'
         with:
-          arguments: publishMavenPublicationToReposiliteRepository
+          arguments: publishLibraryPublicationToReposilite-repositoryRepository
 
       - name: Publish to Maven Central
         if: "!contains(env.CURRENT_VERSION, 'SNAPSHOT')"
