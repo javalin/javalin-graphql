@@ -3,7 +3,6 @@ plugins {
     signing
     `maven-publish`
     kotlin("jvm") version "1.7.0"
-    id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
 }
 
 apply(plugin = "maven-publish")
@@ -13,7 +12,7 @@ apply(plugin = "signing")
 apply(plugin = "org.jetbrains.kotlin.jvm")
 
 group = "io.javalin.community.graphql"
-version = "5.0.1-SNAPSHOT"
+version = "5.0.1"
 
 repositories {
     mavenCentral()
@@ -77,6 +76,9 @@ signing {
 java {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
+}
+
+java {
     withJavadocJar()
     withSourcesJar()
 }
@@ -100,15 +102,6 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
-}
-
-nexusPublishing {
-    repositories {
-        sonatype {
-            username.set(getEnvOrProperty("SONATYPE_USER", "sonatypeUser"))
-            password.set(getEnvOrProperty("SONATYPE_PASSWORD", "sonatypePassword"))
-        }
-    }
 }
 
 fun getEnvOrProperty(env: String, property: String): String? =
