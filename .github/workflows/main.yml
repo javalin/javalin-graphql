@@ -1,27 +1,28 @@
-name: Test all JDKs on all OSes
+name: Deploy to Reposilite
 
-on: [push, pull_request]
+on:
+  push:
+    tags:
+      - 'v*'
 
 jobs:
-  build:
 
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        java_version: [11, 17, 18] # Test all LTS releases and the latest one
-        os: [windows-latest, macOS-latest, ubuntu-latest]
+  publish:
+    name: "Publish to maven repo"
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Set up JDK ${{ matrix.java_version }}
-        uses: actions/setup-java@v2
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3.4.0
         with:
           distribution: 'zulu'
-          java-version: ${{ matrix.java_version }}
-      - name: Grant execute permission for gradlew
-        if: contains(matrix.os, 'win') == false
-        run: chmod +x gradlew
-      - name: Build with Gradle
-        run: ./gradlew build
-
+          java-version: '17'
+      - name: Publish to Reposilite
+        uses: gradle/gradle-build-action@v2.2.1
+        env:
+          MAVEN_NAME: '${{ secrets.MAVEN_NAME }}'
+          MAVEN_TOKEN: '${{ secrets.MAVEN_TOKEN }}'
+        with:
+          arguments:  publishAllPublicationsToReposilite-repositoryRepository

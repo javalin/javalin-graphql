@@ -12,7 +12,7 @@ public class HelloWorldGraphQL {
             .register(new QueryExampleJVM());
 
         Javalin
-            .create(config -> config.registerPlugin(new GraphQLPlugin(graphQLOptions)))
+            .create(config -> config.plugins.register(new GraphQLPlugin(graphQLOptions)))
             .start(7070);
 
     }

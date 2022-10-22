@@ -1,5 +1,6 @@
 plugins {
     `java-library`
+    signing
     `maven-publish`
     kotlin("jvm") version "1.7.0"
 }
@@ -7,10 +8,11 @@ plugins {
 apply(plugin = "maven-publish")
 apply(plugin = "java-library")
 apply(plugin = "application")
+apply(plugin = "signing")
 apply(plugin = "org.jetbrains.kotlin.jvm")
 
-group = "io.javalin"
-version = "5.0.0-SNAPSHOT"
+group = "io.javalin.community.graphql"
+version = "5.0.1"
 
 repositories {
     mavenCentral()
@@ -18,12 +20,42 @@ repositories {
 }
 
 publishing {
+    publications {
+        create<MavenPublication>("library") {
+            pom {
+                name.set("javalin-grqphql")
+                description.set("Javalin OpenAPI Plugin | Serve raw OpenApi documentation under dedicated endpoint")
+                url.set("https://github.com/javalin/javalin-openapi")
+
+                licenses {
+                    license {
+                        name.set("The Apache License, Version 2.0")
+                        url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                    }
+                }
+                developers {
+                    developer {
+                        id.set("7agustibm")
+                        name.set("Agusti Becerra Mila")
+                        email.set("contact@agustibm.net")
+                    }
+                }
+                scm {
+                    connection.set("scm:git:git://github.com/javalin/javalin-graphql.git")
+                    developerConnection.set("scm:git:ssh://github.com/javalin/javalin-graphql.git")
+                    url.set("https://github.com/javalin/javalin-graphql.git")
+                }
+            }
+
+            from(components.getByName("java"))
+        }
+    }
     repositories {
         maven {
             name = "reposilite-repository"
             url = uri(
                 "https://maven.reposilite.com/${
-                if (version.toString().endsWith("-SNAPSHOT")) "snapshots" else "releases"
+                    if (version.toString().endsWith("-SNAPSHOT")) "snapshots" else "releases"
                 }"
             )
 
@@ -35,9 +67,10 @@ publishing {
     }
 }
 
-java {
-    withJavadocJar()
-    withSourcesJar()
+signing {
+    if (findProperty("signing.keyId") != null) {
+        sign(publishing.publications.getByName("library"))
+    }
 }
 
 java {
@@ -45,20 +78,17 @@ java {
     targetCompatibility = JavaVersion.VERSION_11
 }
 
-publishing {
-    publications {
-        create<MavenPublication>("library") {
-            from(components.getByName("java"))
-        }
-    }
+java {
+    withJavadocJar()
+    withSourcesJar()
 }
 
 dependencies {
-    implementation("io.javalin", "javalin", "5.0.0-SNAPSHOT")
+    implementation("io.javalin", "javalin", "5.0.1")
     implementation("com.expediagroup", "graphql-kotlin-server", "5.5.0")
     implementation("com.expediagroup", "graphql-kotlin-schema-generator", "5.5.0")
 
-    testImplementation("io.javalin", "javalin-testtools", "4.6.3")
+    testImplementation("io.javalin", "javalin-testtools", "5.0.1")
 
     testImplementation("org.junit.jupiter", "junit-jupiter-api", "5.7.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.2")
@@ -73,3 +103,6 @@ dependencies {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+fun getEnvOrProperty(env: String, property: String): String? =
+    System.getenv(env) ?: findProperty(property)?.toString()

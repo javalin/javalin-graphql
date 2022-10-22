@@ -1,9 +1,8 @@
 package io.javalin.plugin.graphql
 
 import io.javalin.Javalin
-import io.javalin.core.plugin.Plugin
-import io.javalin.core.plugin.PluginLifecycleInit
-import io.javalin.core.util.JavalinLogger.info
+import io.javalin.plugin.Plugin
+import io.javalin.plugin.PluginLifecycleInit
 import io.javalin.plugin.graphql.server.JavalinGraphQLServer
 import kotlinx.coroutines.runBlocking
 import org.eclipse.jetty.http.HttpStatus

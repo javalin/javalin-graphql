@@ -20,24 +20,44 @@ with some easy steps.
 Add the dependencies:
 
 <details>
-    <summary>Gradle setup for Javalin 4.x</summary>
+    <summary>Gradle setup for Javalin 5.x</summary>
 
 ```groovy
-implementation("io.javalin:javalin-redoc-plugin:$openapi")
+repositories {
+    maven {
+        url "https://maven.reposilite.com/releases"
+    }
+}
+
+dependencies {
+    implementation "io.javalin.community.graphql:javalin-graphql:5.0.1"
+}
 ```
 
 </details>
 
 
 <details>
-    <summary>Maven setup for Javalin 4.x</summary>
+    <summary>Maven setup for Javalin 5.x</summary>
 
 ```xml
-<dependency>
-    <groupId>io.javalin</groupId>
-    <artifactId>javalin-graphql</artifactId>
-    <version>4.6.3</version>
-</dependency>
+<project>
+    
+    <repositories>
+        <repository>
+            <id>reposilite-repository</id>
+            <url>https://maven.reposilite.com/releases</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.javalin.community.graphql</groupId>
+            <artifactId>javalin-graphql</artifactId>
+            <version>5.0.1</version>
+        </dependency>
+    </dependencies>
+</project>
 ```
 
 </details>

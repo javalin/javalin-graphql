@@ -31,12 +31,12 @@ class SubscriberExample : SubscriptionGraphql {
 
 
 fun main() {
-    val app = Javalin.create {
+    val app = Javalin.create { config ->
         val graphQLOption = GraphQLOptions("/graphql")
             .addPackage("io.javalin.examples")
             .register(QueryExample())
             .register(SubscriberExample())
-        it.registerPlugin(GraphQLPlugin(graphQLOption))
+        config.plugins.register(GraphQLPlugin(graphQLOption))
     }
 
     app.start()
