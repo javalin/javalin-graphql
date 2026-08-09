@@ -2,30 +2,23 @@ plugins {
     `java-library`
     signing
     `maven-publish`
-    kotlin("jvm") version "1.7.0"
+    kotlin("jvm") version "2.2.20"
 }
 
-apply(plugin = "maven-publish")
-apply(plugin = "java-library")
-apply(plugin = "application")
-apply(plugin = "signing")
-apply(plugin = "org.jetbrains.kotlin.jvm")
-
 group = "io.javalin.community.graphql"
-version = "5.0.1"
+version = "7.0.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
-    maven("https://maven.reposilite.com/snapshots")
 }
 
 publishing {
     publications {
         create<MavenPublication>("library") {
             pom {
-                name.set("javalin-grqphql")
-                description.set("Javalin OpenAPI Plugin | Serve raw OpenApi documentation under dedicated endpoint")
-                url.set("https://github.com/javalin/javalin-openapi")
+                name.set("javalin-graphql")
+                description.set("Javalin GraphQL Plugin | Serve a GraphQL schema, GraphiQL and subscriptions under a dedicated endpoint")
+                url.set("https://github.com/javalin/javalin-graphql")
 
                 licenses {
                     license {
@@ -60,8 +53,8 @@ publishing {
             )
 
             credentials {
-                username = System.getenv("MAVEN_NAME") ?: property("mavenUser").toString()
-                password = System.getenv("MAVEN_TOKEN") ?: property("mavenPassword").toString()
+                username = System.getenv("MAVEN_NAME") ?: findProperty("mavenUser")?.toString() ?: ""
+                password = System.getenv("MAVEN_TOKEN") ?: findProperty("mavenPassword")?.toString() ?: ""
             }
         }
     }
@@ -73,9 +66,16 @@ signing {
     }
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+// Javalin 7 has a JVM 17 baseline. We compile with whatever JDK is on the machine
+// (>= 17) but always *emit* 17 bytecode, so the artifact stays usable on 17.
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.release.set(17)
 }
 
 java {
@@ -84,25 +84,28 @@ java {
 }
 
 dependencies {
-    implementation("io.javalin", "javalin", "5.0.1")
-    implementation("com.expediagroup", "graphql-kotlin-server", "5.5.0")
-    implementation("com.expediagroup", "graphql-kotlin-schema-generator", "5.5.0")
+    implementation("io.javalin", "javalin", "7.2.2")
+    implementation("com.expediagroup", "graphql-kotlin-server", "10.2.0")
+    implementation("com.expediagroup", "graphql-kotlin-schema-generator", "10.2.0")
+    implementation("com.expediagroup", "graphql-kotlin-dataloader", "10.2.0")
+    implementation("org.jetbrains.kotlinx", "kotlinx-coroutines-core", "1.10.2")
 
-    testImplementation("io.javalin", "javalin-testtools", "5.0.1")
+    testImplementation("io.javalin", "javalin-testtools", "7.2.2")
 
-    testImplementation("org.junit.jupiter", "junit-jupiter-api", "5.7.2")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.2")
-    testImplementation("org.assertj", "assertj-core", "3.20.2")
-    testImplementation("com.konghq", "unirest-java", "3.13.8")
-    testImplementation("org.slf4j:slf4j-simple:2.0.0-alpha7")
-    testImplementation("javax.servlet", "javax.servlet-api", "3.1.0")
-    testImplementation("org.java-websocket:Java-WebSocket:1.5.3")
-    testImplementation("io.projectreactor:reactor-core:3.4.19")
+    // Javalin 7 no longer bundles an object mapper; the app picks one. Tests need one to exist.
+    testImplementation("com.fasterxml.jackson.core:jackson-databind:2.21.2")
+    testImplementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.21.2")
+
+    testImplementation(platform("org.junit:junit-bom:6.1.3"))
+    testImplementation("org.junit.jupiter:junit-jupiter-api")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.assertj", "assertj-core", "3.27.3")
+    testImplementation("com.konghq", "unirest-java", "3.14.5")
+    testImplementation("org.slf4j:slf4j-simple:2.0.16")
+    testImplementation("org.java-websocket:Java-WebSocket:1.6.0")
 }
 
 tasks.withType<Test> {
     useJUnitPlatform()
 }
-
-fun getEnvOrProperty(env: String, property: String): String? =
-    System.getenv(env) ?: findProperty(property)?.toString()

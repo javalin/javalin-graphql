@@ -6,7 +6,8 @@ import io.javalin.plugin.graphql.GraphQLOptions
 import io.javalin.plugin.graphql.GraphQLPlugin
 import io.javalin.plugin.graphql.graphql.QueryGraphql
 import io.javalin.plugin.graphql.graphql.SubscriptionGraphql
-import reactor.core.publisher.Flux
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 // More documentation: https://expediagroup.github.io/graphql-kotlin/docs/getting-started
 @GraphQLDescription("awesome data")
@@ -26,7 +27,7 @@ class QueryExample : QueryGraphql {
 
 @GraphQLDescription("Subscriber Example")
 class SubscriberExample : SubscriptionGraphql {
-    fun number() = Flux.just((1..10).random())
+    fun number(): Flow<Int> = flowOf((1..10).random())
 }
 
 
@@ -36,7 +37,7 @@ fun main() {
             .addPackage("io.javalin.examples")
             .register(QueryExample())
             .register(SubscriberExample())
-        config.plugins.register(GraphQLPlugin(graphQLOption))
+        config.registerPlugin(GraphQLPlugin(graphQLOption))
     }
 
     app.start()

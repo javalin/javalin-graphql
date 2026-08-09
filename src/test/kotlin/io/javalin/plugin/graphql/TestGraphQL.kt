@@ -20,7 +20,8 @@ class TestGraphQL {
     private val message = "Hello World"
     private val newMessage = "hi"
 
-    data class TestLogger(val log: ArrayList<String>)
+    // Javalin 7 dropped app attributes; a plain field per test instance does the same job.
+    private val log = ArrayList<String>()
 
     @Test
     fun query() = JavalinTest.test(shortTimeoutServer()) { server, client ->
@@ -67,7 +68,7 @@ class TestGraphQL {
         val body = client.post(
             graphqlPath,
             "{\"query\": \"{ isAuthorized }\"}"
-        ) { request -> request.addHeader("Authorization", "Beare token") }.body?.string()
+        ) { request -> request.header("Authorization", "Beare token") }.body?.string()
         assertTrue(JSONObject(body).getJSONObject("data").getBoolean("isAuthorized"))
     }
 
@@ -75,14 +76,14 @@ class TestGraphQL {
     fun subscribe() = JavalinTest.test(shortTimeoutServer()) { server, client ->
         TestClient(server, graphqlPath)
             .connectSendAndDisconnect("{\"query\": \"subscription { counter }\"}")
-        assertThat(server.logger().log).containsAnyOf("{\"counter\":1}")
+        assertThat(log).containsAnyOf("{\"counter\":1}")
     }
 
     @Test
     fun subscribeWithoutContext() = JavalinTest.test(shortTimeoutServer()) { server, client ->
         TestClient(server, graphqlPath)
             .connectSendAndDisconnect("{\"query\": \"subscription { counterUser }\"}")
-        assertThat(server.logger().log).containsAnyOf("{\"counterUser\":\"${SubscriptionExample.anonymous_message} ~> 1\"}")
+        assertThat(log).containsAnyOf("{\"counterUser\":\"${SubscriptionExample.anonymous_message} ~> 1\"}")
     }
 
     @Test
@@ -90,7 +91,7 @@ class TestGraphQL {
         val tokenUser = "token"
         TestClient(server, graphqlPath, mapOf("Authorization" to "Beare $tokenUser"))
             .connectSendAndDisconnect("{\"query\": \"subscription { counterUser }\"}")
-        assertThat(server.logger().log).containsAnyOf("{\"counterUser\":\"$tokenUser ~> 1\"}")
+        assertThat(log).containsAnyOf("{\"counterUser\":\"$tokenUser ~> 1\"}")
     }
 
     internal open inner class TestClient(
@@ -107,7 +108,7 @@ class TestGraphQL {
         override fun onError(e: Exception) {}
         override fun onMessage(s: String) {
             onMessage?.invoke(message)
-            app.logger().log.add(s)
+            log.add(s)
         }
 
         fun connectSendAndDisconnect(message: String) {
@@ -117,7 +118,7 @@ class TestGraphQL {
                     send(message)
                 },
                 {
-                    app.logger().log.size == 0
+                    log.size == 0
                 },
                 Duration.ofSeconds(5)
             )
@@ -141,12 +142,6 @@ class TestGraphQL {
         }
     }
 
-    private fun Javalin.logger(): TestLogger {
-        if (this.attribute<TestLogger>(TestLogger::class.java.name) == null) {
-            this.attribute(TestLogger::class.java.name, TestLogger(ArrayList()))
-        }
-        return this.attribute(TestLogger::class.java.name)
-    }
 
     private fun shortTimeoutServer(): Javalin {
         return Javalin.create { config ->
@@ -158,7 +153,7 @@ class TestGraphQL {
                     .register(MutationExample(message))
                     .register(SubscriptionExample())
 
-            config.plugins.register(graphQLPluginBuilder.build())
+            config.registerPlugin(graphQLPluginBuilder.build())
         }
     }
 }

@@ -1,32 +1,32 @@
 package io.javalin.plugin.graphql
 
-import io.javalin.plugin.graphql.graphql.GraphQLRun
+import com.expediagroup.graphql.server.types.GraphQLRequest
 import io.javalin.websocket.WsMessageContext
-import kotlinx.coroutines.reactive.collect
 import kotlinx.coroutines.runBlocking
 
-class GraphQLHandler(private val graphQLBuilder: GraphQLPluginBuilder<*>) {
+class GraphQLHandler(private val graphQLBuilder: GraphQLPluginBuilder) {
 
     fun execute(ctx: WsMessageContext) {
         val body = ctx.messageAsClass(Map::class.java)
         val query = body["query"].toString()
-        val variables: Map<String, Any> = getVariables(body)
+        val variables: Map<String, Any?> = getVariables(body)
         val operationName = body["operationName"]?.toString()
-        val context = runBlocking { graphQLBuilder.contextWsFactory.generateContext(ctx) }
 
         runBlocking {
-            GraphQLRun(graphQLBuilder.getSchema())
-                .withQuery(query)
-                .withVariables(variables)
-                .withOperationName(operationName)
-                .withContext(context)
-                .subscribe()
-                .collect {
-                    ctx.send(it.getData<Any>())
+            val graphQLContext = graphQLBuilder.contextWsFactory.generateContext(ctx)
+            val request = GraphQLRequest(query = query, operationName = operationName, variables = variables)
+
+            graphQLBuilder.requestHandler
+                .executeSubscription(request, graphQLContext)
+                .collect { response ->
+                    // Send just the data when there is any, so a subscriber receives {"field":value};
+                    // fall back to the whole response so errors are not swallowed.
+                    ctx.send(response.data ?: response)
                 }
         }
     }
 
-    private fun getVariables(body: Map<*, *>) =
-        if (body["variables"] == null) emptyMap() else body["variables"] as Map<String, Any>
+    @Suppress("UNCHECKED_CAST")
+    private fun getVariables(body: Map<*, *>): Map<String, Any?> =
+        if (body["variables"] == null) emptyMap() else body["variables"] as Map<String, Any?>
 }
