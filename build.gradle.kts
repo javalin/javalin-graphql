@@ -109,3 +109,16 @@ dependencies {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+// JPMS (issues #5 and #6). A full module-info.java is not possible yet: the
+// graphql-kotlin artifacts declare neither a module descriptor nor an
+// Automatic-Module-Name, so they resolve as automatic modules named after their
+// file names (graphql.kotlin.server, ...). Requiring those would freeze unstable
+// names into our descriptor, and Gradle refuses to put them on the module path at
+// all. Declaring our own stable module name is the part we can do correctly: it
+// lets a modular application `requires io.javalin.community.graphql` today.
+tasks.jar {
+    manifest {
+        attributes("Automatic-Module-Name" to "io.javalin.community.graphql")
+    }
+}
