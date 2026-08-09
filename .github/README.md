@@ -1,5 +1,5 @@
 [![Chat at https://discord.gg/sgak4e5NKv](https://img.shields.io/badge/chat-on%20Discord-%234cb697)](https://discord.gg/sgak4e5NKv)
-[![Test all JDKs on all OSes](https://github.com/javalin/javalin-graphql/actions/workflows/main.yml/badge.svg)](https://github.com/javalin/javalin-graphql/actions/workflows/main.yml)
+[![Build](https://github.com/javalin/javalin-graphql/actions/workflows/build.yml/badge.svg)](https://github.com/javalin/javalin-graphql/actions/workflows/build.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 # About Javalin
@@ -177,6 +177,17 @@ It does not ship a `module-info.java` yet. The graphql-kotlin artifacts declare 
 module descriptor nor an `Automatic-Module-Name`, so they resolve as automatic modules named
 after their file names; requiring those would freeze unstable names into the descriptor. See
 [#5](https://github.com/javalin/javalin-graphql/issues/5).
+
+### Design decisions
+
+The reasoning behind the 7.0 design is recorded as ADRs in [`docs/adr`](../docs/adr):
+
+| | |
+|---|---|
+| [ADR-001](../docs/adr/adr-001-context-model.md) | Context model follows graphql-java instead of a plugin type |
+| [ADR-002](../docs/adr/adr-002-subscription-protocol.md) | Serve subscriptions over graphql-transport-ws |
+| [ADR-003](../docs/adr/adr-003-json-mapping.md) | Parse GraphQL payloads without graphql-kotlin's sealed types |
+| [ADR-004](../docs/adr/adr-004-jpms.md) | Declare an automatic module name instead of shipping module-info |
 
 ### Migrating from 5.x
 

@@ -1,14 +1,21 @@
 package io.javalin.plugin.graphql
 
 import io.javalin.Javalin
-import io.javalin.plugin.graphql.helpers.*
+import io.javalin.plugin.graphql.helpers.ContextFactoryExample
+import io.javalin.plugin.graphql.helpers.ContextWsFactoryExample
+import io.javalin.plugin.graphql.helpers.MutationExample
+import io.javalin.plugin.graphql.helpers.QueryExample
+import io.javalin.plugin.graphql.helpers.SubscriptionExample
 import io.javalin.testtools.JavalinTest
 import kong.unirest.json.JSONObject
 import org.assertj.core.api.Assertions.assertThat
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.drafts.Draft_6455
 import org.java_websocket.handshake.ServerHandshake
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.Test
 import java.net.URI
 import java.util.concurrent.LinkedBlockingQueue

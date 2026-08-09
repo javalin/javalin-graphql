@@ -5,6 +5,7 @@ import com.expediagroup.graphql.server.types.GraphQLBatchRequest
 import com.expediagroup.graphql.server.types.GraphQLRequest
 import com.expediagroup.graphql.server.types.GraphQLServerRequest
 import io.javalin.http.Context
+import org.slf4j.LoggerFactory
 
 /**
  * Parses the request body into a [GraphQLServerRequest].
@@ -28,9 +29,16 @@ class JavalinGraphQLRequestParser : GraphQLRequestParser<Context> {
                     GraphQLBatchRequest(request.bodyAsClass(Array<GraphQLRequest>::class.java).toList())
                 else -> request.bodyAsClass(GraphQLRequest::class.java)
             }
-        } catch (e: Exception) {
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            // Deliberately broad: this is a trust boundary. Any mapper can fail in its own way on
+            // a malformed body, and none of those failures should reach the client as a 500.
             // Returning null makes GraphQLServer skip execution, which the plugin turns into a 400.
+            log.debug("Could not parse the request body as a GraphQL request", e)
             null
         }
+    }
+
+    private companion object {
+        private val log = LoggerFactory.getLogger(JavalinGraphQLRequestParser::class.java)
     }
 }

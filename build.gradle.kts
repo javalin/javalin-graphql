@@ -3,6 +3,12 @@ plugins {
     signing
     `maven-publish`
     kotlin("jvm") version "2.2.20"
+    id("io.gitlab.arturbosch.detekt") version "1.23.8"
+}
+
+detekt {
+    buildUponDefaultConfig = true
+    config.setFrom(files("$rootDir/detekt.yml"))
 }
 
 group = "io.javalin.community.graphql"

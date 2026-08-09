@@ -39,7 +39,11 @@ class GraphQLPluginBuilder(
 
     companion object {
         fun create(options: GraphQLOptions): GraphQLPluginBuilder {
-            val graphQLPluginBuilder = GraphQLPluginBuilder(options.path, EmptyGraphQLContextFactory(), EmptyWsGraphQLContextFactory())
+            val graphQLPluginBuilder = GraphQLPluginBuilder(
+                options.path,
+                EmptyGraphQLContextFactory(),
+                EmptyWsGraphQLContextFactory()
+            )
             graphQLPluginBuilder.queries = options.queries
             graphQLPluginBuilder.mutations = options.mutations
             graphQLPluginBuilder.subscriptions = options.subscriptions

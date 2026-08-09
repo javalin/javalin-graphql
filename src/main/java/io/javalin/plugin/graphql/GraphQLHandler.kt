@@ -59,7 +59,8 @@ class GraphQLHandler(private val graphQLBuilder: GraphQLPluginBuilder) {
     fun onMessage(ctx: WsMessageContext) {
         val message = try {
             ctx.messageAsClass(Map::class.java)
-        } catch (e: Exception) {
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            // Trust boundary: a client can send anything, and no frame should kill the connection.
             log.debug("Could not read WebSocket frame as JSON", e)
             return ctx.closeSession(BAD_REQUEST, "Invalid message received")
         }
@@ -112,7 +113,9 @@ class GraphQLHandler(private val graphQLBuilder: GraphQLPluginBuilder) {
                 ctx.send(SubscriptionMessageComplete(id))
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                // A resolver is user code and may throw anything; report it as a protocol
+                // `error` for this operation instead of tearing down the whole connection.
                 log.debug("GraphQL subscription {} failed", id, e)
                 ctx.send(SubscriptionMessageError(id, listOf(GraphQLServerError(e.message ?: "Subscription failed"))))
             } finally {

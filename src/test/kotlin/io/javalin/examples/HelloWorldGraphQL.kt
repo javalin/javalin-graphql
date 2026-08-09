@@ -19,6 +19,7 @@ data class DemoData(
 )
 
 @GraphQLDescription("Query Example")
+@Suppress("FunctionOnlyReturningConstant") // it is an example schema
 class QueryExample : QueryGraphql {
     fun hello(): String = "Hello world"
 
