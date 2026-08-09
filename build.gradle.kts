@@ -128,3 +128,9 @@ tasks.jar {
         attributes("Automatic-Module-Name" to "io.javalin.community.graphql")
     }
 }
+
+// Used by the deploy workflow to tell a snapshot from a release before publishing.
+tasks.register("printVersion") {
+    val projectVersion = version.toString()
+    doLast { println(projectVersion) }
+}
