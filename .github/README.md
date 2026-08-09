@@ -122,9 +122,11 @@ can talk to the endpoint directly. The connection is acknowledged with `connecti
 `connection_ack`, each operation carries an id, and a subscription is cancelled by the
 client's `complete` message or when the socket closes.
 
-> Javalin does not expose WebSocket subprotocol negotiation, so the server cannot echo
-> `Sec-WebSocket-Protocol: graphql-transport-ws`. RFC 6455 does not require it and the
-> reference client does not check for it.
+> Javalin exposes no API for WebSocket subprotocol negotiation, and the Jetty handshake
+> underneath echoes back whichever subprotocol the client requested first, without checking
+> it. A `graphql-transport-ws` client connects correctly; a client asking for a protocol this
+> plugin does not speak — the legacy `graphql-ws` subprotocol, say — is told yes and then
+> receives messages it cannot understand.
 
 ### Context
 

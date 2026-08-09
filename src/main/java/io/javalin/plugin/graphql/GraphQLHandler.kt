@@ -33,9 +33,11 @@ import java.util.concurrent.ConcurrentHashMap
  * deserialized into the sealed `GraphQLSubscriptionMessage`. That keeps the plugin working
  * with whatever `JsonMapper` the application has configured.
  *
- * Note: Javalin exposes no WebSocket subprotocol negotiation, so the server cannot echo
- * `Sec-WebSocket-Protocol: graphql-transport-ws` back to the client. RFC 6455 does not
- * require it and the reference client does not check for it, but it is a known gap.
+ * Note on subprotocol negotiation: Javalin exposes no API for it, and the Jetty handshake
+ * underneath echoes back whichever subprotocol the client requested first, without checking
+ * it. A `graphql-transport-ws` client therefore connects correctly, but a client asking for
+ * something this handler does not speak — the legacy `graphql-ws` subprotocol, say — is told
+ * yes and then receives messages it cannot understand. Rejecting those needs a Javalin change.
  */
 class GraphQLHandler(private val graphQLBuilder: GraphQLPluginBuilder) {
 
