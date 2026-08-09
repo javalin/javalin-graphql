@@ -34,7 +34,8 @@ class GraphQLPlugin(private val builder: GraphQLPluginBuilder) : Plugin<Void>() 
             }
         }
         state.routes.ws(builder.path) { ws ->
-            ws.onMessage { ctx -> graphQLHandler.execute(ctx) }
+            ws.onMessage { ctx -> graphQLHandler.onMessage(ctx) }
+            ws.onClose { ctx -> graphQLHandler.onClose(ctx) }
             ws.onError { ctx -> log.error("GraphQL WebSocket error", ctx.error()) }
         }
     }

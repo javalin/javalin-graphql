@@ -11,17 +11,14 @@ import org.java_websocket.handshake.ServerHandshake
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import java.net.URI
-import java.time.Duration
-import java.util.concurrent.TimeoutException
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
 
 class TestGraphQL {
 
     private val graphqlPath = "/graphql"
     private val message = "Hello World"
     private val newMessage = "hi"
-
-    // Javalin 7 dropped app attributes; a plain field per test instance does the same job.
-    private val log = ArrayList<String>()
 
     @Test
     fun query() = JavalinTest.test(shortTimeoutServer()) { server, client ->
@@ -72,76 +69,135 @@ class TestGraphQL {
         assertTrue(JSONObject(body).getJSONObject("data").getBoolean("isAuthorized"))
     }
 
+    // --- graphql-transport-ws ---------------------------------------------------------------
+
+    @Test
+    fun connectionInitIsAcknowledged() = JavalinTest.test(shortTimeoutServer()) { server, client ->
+        TestClient(server, graphqlPath).session { it.initAndAwaitAck() }
+    }
+
+    @Test
+    fun pingIsAnsweredWithPong() = JavalinTest.test(shortTimeoutServer()) { server, client ->
+        TestClient(server, graphqlPath).session { ws ->
+            ws.initAndAwaitAck()
+            ws.sendJson("""{"type":"ping"}""")
+            assertEquals("pong", ws.awaitMessage { it.getString("type") == "pong" }.getString("type"))
+        }
+    }
+
+    @Test
+    fun subscribeBeforeConnectionInitIsUnauthorized() = JavalinTest.test(shortTimeoutServer()) { server, client ->
+        TestClient(server, graphqlPath).session { ws ->
+            ws.connectBlocking()
+            ws.subscribe("1", "subscription { counter }")
+            assertEquals(4401, ws.awaitClose())
+        }
+    }
+
     @Test
     fun subscribe() = JavalinTest.test(shortTimeoutServer()) { server, client ->
-        TestClient(server, graphqlPath)
-            .connectSendAndDisconnect("{\"query\": \"subscription { counter }\"}")
-        assertThat(log).containsAnyOf("{\"counter\":1}")
+        TestClient(server, graphqlPath).session { ws ->
+            ws.initAndAwaitAck()
+            ws.subscribe("1", "subscription { counter }")
+
+            val next = ws.awaitMessage { it.getString("type") == "next" }
+            assertEquals("1", next.getString("id"))
+            assertEquals(1, next.getJSONObject("payload").getJSONObject("data").getInt("counter"))
+
+            // the stream is finite, so the server must say so
+            assertEquals("1", ws.awaitMessage { it.getString("type") == "complete" }.getString("id"))
+        }
     }
 
     @Test
     fun subscribeWithoutContext() = JavalinTest.test(shortTimeoutServer()) { server, client ->
-        TestClient(server, graphqlPath)
-            .connectSendAndDisconnect("{\"query\": \"subscription { counterUser }\"}")
-        assertThat(log).containsAnyOf("{\"counterUser\":\"${SubscriptionExample.anonymous_message} ~> 1\"}")
+        TestClient(server, graphqlPath).session { ws ->
+            ws.initAndAwaitAck()
+            ws.subscribe("1", "subscription { counterUser }")
+
+            val next = ws.awaitMessage { it.getString("type") == "next" }
+            assertEquals(
+                "${SubscriptionExample.anonymous_message} ~> 1",
+                next.getJSONObject("payload").getJSONObject("data").getString("counterUser")
+            )
+        }
     }
 
     @Test
-    fun subscribeWithContext() = JavalinTest.test(shortTimeoutServer()) { server, httpUtil ->
+    fun subscribeWithContext() = JavalinTest.test(shortTimeoutServer()) { server, client ->
         val tokenUser = "token"
-        TestClient(server, graphqlPath, mapOf("Authorization" to "Beare $tokenUser"))
-            .connectSendAndDisconnect("{\"query\": \"subscription { counterUser }\"}")
-        assertThat(log).containsAnyOf("{\"counterUser\":\"$tokenUser ~> 1\"}")
-    }
+        TestClient(server, graphqlPath, mapOf("Authorization" to "Beare $tokenUser")).session { ws ->
+            ws.initAndAwaitAck()
+            ws.subscribe("1", "subscription { counterUser }")
 
-    internal open inner class TestClient(
-        var app: Javalin,
-        path: String,
-        headers: Map<String, String> = emptyMap(),
-        val onOpen: (TestClient) -> Unit = {},
-        var onMessage: ((String) -> Unit)? = null
-    ) :
-        WebSocketClient(URI.create("ws://localhost:" + app.port() + path), Draft_6455(), headers, 0) {
-
-        override fun onOpen(serverHandshake: ServerHandshake) = onOpen(this)
-        override fun onClose(i: Int, s: String, b: Boolean) {}
-        override fun onError(e: Exception) {}
-        override fun onMessage(s: String) {
-            onMessage?.invoke(message)
-            log.add(s)
-        }
-
-        fun connectSendAndDisconnect(message: String) {
-            connectBlocking()
-            doBlocking(
-                {
-                    send(message)
-                },
-                {
-                    log.size == 0
-                },
-                Duration.ofSeconds(5)
+            val next = ws.awaitMessage { it.getString("type") == "next" }
+            assertEquals(
+                "$tokenUser ~> 1",
+                next.getJSONObject("payload").getJSONObject("data").getString("counterUser")
             )
         }
+    }
 
-        private fun doBlocking(
-            slowFunction: () -> Unit,
-            conditionFunction: () -> Boolean,
-            timeout: Duration = Duration.ofSeconds(1)
-        ) {
-            val startTime = System.currentTimeMillis()
-            val limitTime = startTime + timeout.toMillis()
-            slowFunction.invoke()
-            while (conditionFunction.invoke()) {
-                if (System.currentTimeMillis() > limitTime) {
-                    break
-//                    throw TimeoutException("Wait for condition has timed out")
-                }
-                Thread.sleep(25)
-            }
+    @Test
+    fun reusingAnOperationIdIsRejected() = JavalinTest.test(shortTimeoutServer()) { server, client ->
+        TestClient(server, graphqlPath).session { ws ->
+            ws.initAndAwaitAck()
+            ws.subscribe("1", "subscription { counterUser }")
+            ws.subscribe("1", "subscription { counterUser }")
+            assertEquals(4409, ws.awaitClose())
         }
     }
 
+    /** Minimal graphql-transport-ws client, enough to drive the protocol from a test. */
+    internal inner class TestClient(
+        app: Javalin,
+        path: String,
+        headers: Map<String, String> = emptyMap()
+    ) : WebSocketClient(URI.create("ws://localhost:" + app.port() + path), Draft_6455(), headers, 0) {
+
+        private val received = LinkedBlockingQueue<JSONObject>()
+        private val closeCodes = LinkedBlockingQueue<Int>()
+
+        override fun onOpen(serverHandshake: ServerHandshake) {}
+        override fun onClose(code: Int, reason: String, remote: Boolean) { closeCodes.offer(code) }
+        override fun onError(e: Exception) {}
+        override fun onMessage(s: String) { received.offer(JSONObject(s)) }
+
+        fun sendJson(json: String) = send(json)
+
+        fun initAndAwaitAck() {
+            connectBlocking()
+            sendJson("""{"type":"connection_init"}""")
+            awaitMessage { it.getString("type") == "connection_ack" }
+        }
+
+        fun subscribe(id: String, query: String) =
+            sendJson("""{"id":"$id","type":"subscribe","payload":{"query":"$query"}}""")
+
+        /** Waits for the first message matching [predicate], failing the test on timeout. */
+        fun awaitMessage(timeoutSeconds: Long = 5, predicate: (JSONObject) -> Boolean): JSONObject {
+            val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeoutSeconds)
+            val seen = mutableListOf<JSONObject>()
+            while (System.nanoTime() < deadline) {
+                val next = received.poll(200, TimeUnit.MILLISECONDS) ?: continue
+                if (predicate(next)) return next
+                seen.add(next)
+            }
+            return fail("No matching message within ${timeoutSeconds}s. Received: $seen")
+        }
+
+        fun awaitClose(timeoutSeconds: Long = 5): Int =
+            closeCodes.poll(timeoutSeconds, TimeUnit.SECONDS) ?: fail("Connection was not closed")
+    }
+
+    /** Runs [block] against the client and always closes the socket afterwards. */
+    private fun TestClient.session(block: (TestClient) -> Unit) {
+        try {
+            block(this)
+        } finally {
+            closeBlocking()
+        }
+    }
 
     private fun shortTimeoutServer(): Javalin {
         return Javalin.create { config ->
