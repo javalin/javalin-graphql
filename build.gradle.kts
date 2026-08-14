@@ -90,11 +90,18 @@ java {
 }
 
 dependencies {
-    implementation("io.javalin", "javalin", "7.2.2")
-    implementation("com.expediagroup", "graphql-kotlin-server", "10.2.0")
-    implementation("com.expediagroup", "graphql-kotlin-schema-generator", "10.2.0")
-    implementation("com.expediagroup", "graphql-kotlin-dataloader", "10.2.0")
-    implementation("org.jetbrains.kotlinx", "kotlinx-coroutines-core", "1.10.2")
+    // All of these appear in this plugin's public API, so they belong on the consumer's
+    // compile classpath: Javalin's Context and WsMessageContext in the builder and the
+    // options, graphql-kotlin's GraphQLContextFactory, KotlinDataLoader and TopLevelObject
+    // in public signatures (which drag in graphql-java's GraphQLContext), the schema
+    // annotations a consumer needs to write resolvers at all, and Flow, which is what a
+    // subscription resolver returns. As `implementation` none of it reached a consumer,
+    // and the examples in the README did not compile.
+    api("io.javalin", "javalin", "7.2.2")
+    api("com.expediagroup", "graphql-kotlin-server", "10.2.0")
+    api("com.expediagroup", "graphql-kotlin-schema-generator", "10.2.0")
+    api("com.expediagroup", "graphql-kotlin-dataloader", "10.2.0")
+    api("org.jetbrains.kotlinx", "kotlinx-coroutines-core", "1.10.2")
 
     testImplementation("io.javalin", "javalin-testtools", "7.2.2")
 
