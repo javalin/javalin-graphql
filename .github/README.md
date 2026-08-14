@@ -25,14 +25,22 @@ application. Schemas are generated from Kotlin (or Java) classes by
 
 ### Getting Started
 
+> **7.0.0 is not released yet.** There is a `7.0.0-SNAPSHOT` to try, published to Javalin's
+> Reposilite. See [#7](https://github.com/javalin/javalin-graphql/issues/7) for the release
+> and Maven Central discussion.
+
 Add the dependency:
 
 <details>
     <summary>Gradle</summary>
 
 ```kotlin
+repositories {
+    maven("https://maven.reposilite.com/snapshots")
+}
+
 dependencies {
-    implementation("io.javalin.community.graphql:javalin-graphql:7.0.0")
+    implementation("io.javalin.community.graphql:javalin-graphql:7.0.0-SNAPSHOT")
 }
 ```
 
@@ -42,10 +50,18 @@ dependencies {
     <summary>Maven</summary>
 
 ```xml
+<repositories>
+    <repository>
+        <id>reposilite-snapshots</id>
+        <url>https://maven.reposilite.com/snapshots</url>
+        <snapshots><enabled>true</enabled></snapshots>
+    </repository>
+</repositories>
+
 <dependency>
     <groupId>io.javalin.community.graphql</groupId>
     <artifactId>javalin-graphql</artifactId>
-    <version>7.0.0</version>
+    <version>7.0.0-SNAPSHOT</version>
 </dependency>
 ```
 

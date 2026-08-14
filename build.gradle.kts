@@ -36,7 +36,7 @@ publishing {
                     developer {
                         id.set("7agustibm")
                         name.set("Agusti Becerra Mila")
-                        email.set("contact@agustibm.net")
+                        email.set("contact@agustibm.com")
                     }
                 }
                 scm {
