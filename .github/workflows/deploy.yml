@@ -1,0 +1,47 @@
+name: Deploy to Reposilite
+
+on:
+  # Releases are cut from a tag.
+  push:
+    tags:
+      - 'v*'
+  # Snapshots are published on demand from a branch, with no tag involved.
+  workflow_dispatch:
+
+jobs:
+
+  publish:
+    name: "Publish to maven repo"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Read version
+        id: version
+        run: echo "value=$(./gradlew -q printVersion)" >> "$GITHUB_OUTPUT"
+
+      # A manual run may only publish a snapshot; releasing is what the tag is for.
+      - name: Refuse to release without a tag
+        if: github.event_name == 'workflow_dispatch' && !endsWith(steps.version.outputs.value, '-SNAPSHOT')
+        run: |
+          echo "::error::Version ${{ steps.version.outputs.value }} is not a snapshot. Push a v* tag to release."
+          exit 1
+
+      - name: Build and test
+        run: ./gradlew build
+
+      - name: Publish ${{ steps.version.outputs.value }} to Reposilite
+        env:
+          MAVEN_NAME: '${{ secrets.MAVEN_NAME }}'
+          MAVEN_TOKEN: '${{ secrets.MAVEN_TOKEN }}'
+        run: ./gradlew publishAllPublicationsToReposilite-repositoryRepository

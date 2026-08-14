@@ -1,11 +1,14 @@
 package io.javalin.plugin.graphql
 
+import com.expediagroup.graphql.dataloader.KotlinDataLoader
+import com.expediagroup.graphql.dataloader.KotlinDataLoaderRegistryFactory
 import com.expediagroup.graphql.generator.SchemaGeneratorConfig
 import com.expediagroup.graphql.generator.TopLevelObject
-import com.expediagroup.graphql.generator.execution.GraphQLContext
+import com.expediagroup.graphql.generator.execution.FlowSubscriptionExecutionStrategy
+import com.expediagroup.graphql.generator.hooks.FlowSubscriptionSchemaGeneratorHooks
 import com.expediagroup.graphql.generator.toSchema
 import com.expediagroup.graphql.server.execution.GraphQLContextFactory
-import com.expediagroup.graphql.server.execution.KotlinDataLoader
+import com.expediagroup.graphql.server.execution.GraphQLRequestHandler
 import graphql.GraphQL
 import io.javalin.http.Context
 import io.javalin.plugin.graphql.context.EmptyGraphQLContextFactory
@@ -13,13 +16,18 @@ import io.javalin.plugin.graphql.context.EmptyWsGraphQLContextFactory
 import io.javalin.plugin.graphql.graphql.MutationGraphql
 import io.javalin.plugin.graphql.graphql.QueryGraphql
 import io.javalin.plugin.graphql.graphql.SubscriptionGraphql
-import io.javalin.plugin.graphql.server.JavalinDataLoaderRegistryFactory
 import io.javalin.websocket.WsMessageContext
 
-class GraphQLPluginBuilder<out T : GraphQLContext>(
+/**
+ * Builds the GraphQL schema and the pieces the plugin needs to serve it.
+ *
+ * Note that since graphql-kotlin 6 the context is graphql-java's map-like `GraphQLContext`,
+ * so this class no longer carries a context type parameter.
+ */
+class GraphQLPluginBuilder(
     val path: String,
-    val contextFactory: GraphQLContextFactory<T, Context>,
-    val contextWsFactory: GraphQLContextFactory<T, WsMessageContext>
+    val contextFactory: GraphQLContextFactory<Context>,
+    val contextWsFactory: GraphQLContextFactory<WsMessageContext>
 ) {
 
     private var graphql: GraphQL? = null
@@ -30,8 +38,12 @@ class GraphQLPluginBuilder<out T : GraphQLContext>(
     private val dataLoaders: MutableList<KotlinDataLoader<*, *>> = mutableListOf()
 
     companion object {
-        fun create(options: GraphQLOptions): GraphQLPluginBuilder<*> {
-            val graphQLPluginBuilder = GraphQLPluginBuilder(options.path, EmptyGraphQLContextFactory(), EmptyWsGraphQLContextFactory())
+        fun create(options: GraphQLOptions): GraphQLPluginBuilder {
+            val graphQLPluginBuilder = GraphQLPluginBuilder(
+                options.path,
+                EmptyGraphQLContextFactory(),
+                EmptyWsGraphQLContextFactory()
+            )
             graphQLPluginBuilder.queries = options.queries
             graphQLPluginBuilder.mutations = options.mutations
             graphQLPluginBuilder.subscriptions = options.subscriptions
@@ -62,16 +74,27 @@ class GraphQLPluginBuilder<out T : GraphQLContext>(
         if (graphql == null) {
             graphql = GraphQL.newGraphQL(
                 toSchema(
-                    config = SchemaGeneratorConfig(supportedPackages = packages),
+                    // The Flow hooks are what let a subscription resolver return a kotlinx Flow.
+                    config = SchemaGeneratorConfig(
+                        supportedPackages = packages,
+                        hooks = FlowSubscriptionSchemaGeneratorHooks()
+                    ),
                     queries = queries,
                     mutations = mutations,
                     subscriptions = subscriptions
                 )
-            ).build()!!
+            )
+                .subscriptionExecutionStrategy(FlowSubscriptionExecutionStrategy())
+                .build()!!
         }
 
         return graphql!!
     }
 
-    fun toJavalinDataLoaderRegistryFactory() = JavalinDataLoaderRegistryFactory(dataLoaders)
+    internal fun toKotlinDataLoaderRegistryFactory() = KotlinDataLoaderRegistryFactory(dataLoaders)
+
+    /** Built once: a subscription message must not rebuild the handler on every frame. */
+    internal val requestHandler: GraphQLRequestHandler by lazy {
+        GraphQLRequestHandler(getSchema(), toKotlinDataLoaderRegistryFactory())
+    }
 }

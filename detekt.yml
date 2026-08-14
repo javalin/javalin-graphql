@@ -1,0 +1,13 @@
+build:
+  maxIssues: 0
+
+empty-blocks:
+  EmptyFunctionBlock:
+    # The test WebSocket client has to override callbacks it does not care about.
+    ignoreOverridden: true
+
+style:
+  ReturnCount:
+    # The protocol handler validates a frame with guard clauses before doing any work.
+    # That reads better than one deeply nested expression, so allow a few more returns.
+    max: 5

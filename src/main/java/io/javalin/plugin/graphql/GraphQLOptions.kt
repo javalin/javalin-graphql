@@ -29,8 +29,8 @@ class GraphQLOptions(val path: String, val context: Any? = null) {
         this.subscriptions.addAll(subscriptions.map { TopLevelObject(it) })
     }
 
-    fun addPackage(`package`: String) = apply {
-        this.packages.add(`package`)
+    fun addPackage(aPackage: String) = apply {
+        this.packages.add(aPackage)
     }
 
     fun setMiddleHandler(middleHandler: (Context) -> Unit) = apply {
