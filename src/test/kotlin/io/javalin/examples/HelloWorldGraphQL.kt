@@ -2,8 +2,7 @@ package io.javalin.examples
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import io.javalin.Javalin
-import io.javalin.plugin.graphql.GraphQLOptions
-import io.javalin.plugin.graphql.GraphQLPlugin
+import io.javalin.plugin.graphql.GraphQLPluginBuilder
 import io.javalin.plugin.graphql.graphql.QueryGraphql
 import io.javalin.plugin.graphql.graphql.SubscriptionGraphql
 import kotlinx.coroutines.flow.Flow
@@ -32,14 +31,13 @@ class SubscriberExample : SubscriptionGraphql {
 }
 
 
+/** Run this and open http://localhost:7070/graphql to try the schema in GraphiQL. */
 fun main() {
-    val app = Javalin.create { config ->
-        val graphQLOption = GraphQLOptions("/graphql")
-            .addPackage("io.javalin.examples")
-            .register(QueryExample())
-            .register(SubscriberExample())
-        config.registerPlugin(GraphQLPlugin(graphQLOption))
-    }
+    val plugin = GraphQLPluginBuilder("/graphql")
+        .addPackage("io.javalin.examples")
+        .register(QueryExample())
+        .register(SubscriberExample())
+        .build()
 
-    app.start()
+    Javalin.create { config -> config.registerPlugin(plugin) }.start(7070)
 }

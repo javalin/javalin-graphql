@@ -8,12 +8,11 @@ import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 
 /**
- * The plugin is configured through [GraphQLOptions] / [GraphQLPluginBuilder], which are built
- * eagerly by the caller, so there is no `Consumer<CONFIG>` config to apply here — hence [Void].
+ * The plugin is configured through [GraphQLPluginBuilder], which the caller builds eagerly
+ * before registering the plugin, so there is no `Consumer<CONFIG>` config to apply here —
+ * hence [Void]. Prefer [GraphQLPluginBuilder.build] over calling this constructor directly.
  */
 class GraphQLPlugin(private val builder: GraphQLPluginBuilder) : Plugin<Void>() {
-
-    constructor(options: GraphQLOptions) : this(GraphQLPluginBuilder.create(options))
 
     private val log = LoggerFactory.getLogger(GraphQLPlugin::class.java)
     private val graphQLHandler: GraphQLHandler = GraphQLHandler(builder)
@@ -21,9 +20,11 @@ class GraphQLPlugin(private val builder: GraphQLPluginBuilder) : Plugin<Void>() 
     override fun onStart(state: JavalinState) {
         val server = JavalinGraphQLServer.create(builder)
 
-        state.routes.get(builder.path) { ctx ->
-            ctx.contentType("text/html; charset=UTF-8")
-                .result(GraphQLPlugin::class.java.getResourceAsStream("graphqli/index.html")!!)
+        if (builder.graphiQLEnabled) {
+            state.routes.get(builder.path) { ctx ->
+                ctx.contentType("text/html; charset=UTF-8")
+                    .result(GraphQLPlugin::class.java.getResourceAsStream("graphqli/index.html")!!)
+            }
         }
         state.routes.post(builder.path) { ctx ->
             val response = runBlocking { server.execute(ctx) }

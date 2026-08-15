@@ -210,8 +210,7 @@ class TestGraphQL {
         return Javalin.create { config ->
             val graphQLPluginBuilder =
                 GraphQLPluginBuilder(graphqlPath, ContextFactoryExample(), ContextWsFactoryExample())
-                    .add("io.javalin.plugin.graphql")
-                    .add("io.javalin.plugin.graphql.helpers")
+                    .addPackage("io.javalin.plugin.graphql")
                     .register(QueryExample(message))
                     .register(MutationExample(message))
                     .register(SubscriptionExample())

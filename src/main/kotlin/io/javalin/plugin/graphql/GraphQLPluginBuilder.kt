@@ -19,40 +19,55 @@ import io.javalin.plugin.graphql.graphql.SubscriptionGraphql
 import io.javalin.websocket.WsMessageContext
 
 /**
- * Builds the GraphQL schema and the pieces the plugin needs to serve it.
+ * Builds the GraphQL schema and the pieces the plugin needs to serve it. This is the only way
+ * to configure the plugin:
+ *
+ * ```
+ * config.registerPlugin(
+ *     GraphQLPluginBuilder("/graphql")
+ *         .addPackage("com.example.schema")
+ *         .register(QueryExample())
+ *         .build()
+ * )
+ * ```
+ *
+ * Both context factories are optional and default to an empty `GraphQLContext`. The
+ * `@JvmOverloads` is what makes `new GraphQLPluginBuilder("/graphql")` compile from Java,
+ * where Kotlin's default arguments do not exist. Java callers realistically use the defaults:
+ * `GraphQLContextFactory.generateContext` is a `suspend` function, which is not implementable
+ * from Java in practice.
  *
  * Note that since graphql-kotlin 6 the context is graphql-java's map-like `GraphQLContext`,
- * so this class no longer carries a context type parameter.
+ * so this class no longer carries a context type parameter (ADR-001).
  */
-class GraphQLPluginBuilder(
+class GraphQLPluginBuilder @JvmOverloads constructor(
     val path: String,
-    val contextFactory: GraphQLContextFactory<Context>,
-    val contextWsFactory: GraphQLContextFactory<WsMessageContext>
+    val contextFactory: GraphQLContextFactory<Context> = EmptyGraphQLContextFactory(),
+    val contextWsFactory: GraphQLContextFactory<WsMessageContext> = EmptyWsGraphQLContextFactory()
 ) {
 
-    private var graphql: GraphQL? = null
-    private var queries: MutableList<TopLevelObject> = mutableListOf()
-    private var mutations: MutableList<TopLevelObject> = mutableListOf()
-    private var subscriptions: MutableList<TopLevelObject> = mutableListOf()
-    private var packages: MutableList<String> = mutableListOf("kotlin.Unit")
+    private val queries: MutableList<TopLevelObject> = mutableListOf()
+    private val mutations: MutableList<TopLevelObject> = mutableListOf()
+    private val subscriptions: MutableList<TopLevelObject> = mutableListOf()
+    private val packages: MutableList<String> = mutableListOf()
     private val dataLoaders: MutableList<KotlinDataLoader<*, *>> = mutableListOf()
 
-    companion object {
-        fun create(options: GraphQLOptions): GraphQLPluginBuilder {
-            val graphQLPluginBuilder = GraphQLPluginBuilder(
-                options.path,
-                EmptyGraphQLContextFactory(),
-                EmptyWsGraphQLContextFactory()
-            )
-            graphQLPluginBuilder.queries = options.queries
-            graphQLPluginBuilder.mutations = options.mutations
-            graphQLPluginBuilder.subscriptions = options.subscriptions
-            graphQLPluginBuilder.packages = options.packages
-            return graphQLPluginBuilder
-        }
-    }
+    /** Whether `GET <path>` serves GraphiQL. See [disableGraphiQL]. */
+    internal var graphiQLEnabled: Boolean = true
+        private set
 
-    fun add(aPackage: String) = apply { packages.add(aPackage) }
+    /**
+     * Adds a package for graphql-kotlin to scan when it resolves interface and union subtypes.
+     * Sub-packages are included. At least one package is required.
+     */
+    fun addPackage(aPackage: String) = apply { packages.add(aPackage) }
+
+    /**
+     * Stops the plugin from serving GraphiQL, leaving only the `POST` endpoint and the
+     * subscription WebSocket. An application that does not want to publish a schema explorer
+     * has no other way to say so, since the routes are registered by the plugin itself.
+     */
+    fun disableGraphiQL() = apply { graphiQLEnabled = false }
 
     fun register(vararg dataLoaders: KotlinDataLoader<*, *>) = apply { this.dataLoaders.addAll(dataLoaders) }
 
@@ -70,31 +85,34 @@ class GraphQLPluginBuilder(
 
     fun build() = GraphQLPlugin(this)
 
-    internal fun getSchema(): GraphQL {
-        if (graphql == null) {
-            graphql = GraphQL.newGraphQL(
-                toSchema(
-                    // The Flow hooks are what let a subscription resolver return a kotlinx Flow.
-                    config = SchemaGeneratorConfig(
-                        supportedPackages = packages,
-                        hooks = FlowSubscriptionSchemaGeneratorHooks()
-                    ),
-                    queries = queries,
-                    mutations = mutations,
-                    subscriptions = subscriptions
-                )
-            )
-                .subscriptionExecutionStrategy(FlowSubscriptionExecutionStrategy())
-                .build()!!
+    /**
+     * Built once, on first use: generating the schema scans the classpath, and neither a
+     * request nor a subscription frame may pay for that more than once.
+     */
+    internal val schema: GraphQL by lazy {
+        // graphql-kotlin fails an empty scan with `InvalidPackagesException`, which names a
+        // package the caller never wrote. Say what is actually missing instead.
+        check(packages.isNotEmpty()) {
+            "No package to scan. Call addPackage(\"your.schema.package\") before building the plugin."
         }
-
-        return graphql!!
+        GraphQL.newGraphQL(
+            toSchema(
+                // The Flow hooks are what let a subscription resolver return a kotlinx Flow.
+                config = SchemaGeneratorConfig(
+                    supportedPackages = packages,
+                    hooks = FlowSubscriptionSchemaGeneratorHooks()
+                ),
+                queries = queries,
+                mutations = mutations,
+                subscriptions = subscriptions
+            )
+        )
+            .subscriptionExecutionStrategy(FlowSubscriptionExecutionStrategy())
+            .build()
     }
-
-    internal fun toKotlinDataLoaderRegistryFactory() = KotlinDataLoaderRegistryFactory(dataLoaders)
 
     /** Built once: a subscription message must not rebuild the handler on every frame. */
     internal val requestHandler: GraphQLRequestHandler by lazy {
-        GraphQLRequestHandler(getSchema(), toKotlinDataLoaderRegistryFactory())
+        GraphQLRequestHandler(schema, KotlinDataLoaderRegistryFactory(dataLoaders))
     }
 }
