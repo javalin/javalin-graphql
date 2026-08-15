@@ -27,7 +27,7 @@ application. Schemas are generated from Kotlin (or Java) classes by
 
 > **7.0.0 is not released yet.** There is a `7.0.0-SNAPSHOT` to try, published to Javalin's
 > Reposilite. See [#7](https://github.com/javalin/javalin-graphql/issues/7) for the release
-> and Maven Central discussion.
+> and Maven Central discussion, and the [changelog](../CHANGELOG.md) for what is in it.
 
 Add the dependency:
 

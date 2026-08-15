@@ -12,7 +12,16 @@ detekt {
 }
 
 group = "io.javalin.community.graphql"
-version = "7.0.0-SNAPSHOT"
+
+// The published version is the tag the release workflow runs on: v7.0.0 publishes 7.0.0.
+// Anywhere else — a developer machine, a branch build, a manual snapshot publish — it is the
+// snapshot below, so nothing can release by accident. GITHUB_REF_TYPE is what distinguishes
+// the two: on a branch push GITHUB_REF_NAME is the branch name. deploy.yml cross-checks both.
+version = System.getenv("GITHUB_REF_NAME")
+    ?.takeIf { System.getenv("GITHUB_REF_TYPE") == "tag" }
+    ?.removePrefix("v")
+    ?.takeIf { it.isNotBlank() }
+    ?: "7.0.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
