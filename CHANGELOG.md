@@ -8,7 +8,7 @@ tracks Javalin's: 7.x targets Javalin 7.x. Releases up to 5.x predate this file.
 
 ## [Unreleased]
 
-## [7.0.0] - unreleased
+## [7.0.0] - 2026-08-15
 
 The first release for Javalin 7 and graphql-kotlin 10. Everything under *Changed* and *Removed*
 is a breaking change; the README has a
