@@ -39,5 +39,10 @@ class GraphQLPlugin(private val builder: GraphQLPluginBuilder) : Plugin<Void>() 
             ws.onClose { ctx -> graphQLHandler.onClose(ctx) }
             ws.onError { ctx -> log.error("GraphQL WebSocket error", ctx.error()) }
         }
+
+        // Plugin has no onStop hook in Javalin 7, so the subscription scope is tied to the
+        // server lifecycle through the event bus. SERVER_STOPPING fires before Jetty closes
+        // and, unlike SERVER_STOPPED, is also reached when the shutdown itself fails.
+        state.events.serverStopping { graphQLHandler.shutdown() }
     }
 }
