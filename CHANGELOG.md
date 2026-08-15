@@ -74,6 +74,8 @@ is a breaking change; the README has a
   incompatible major, and it requested a `renderExample.js` that does not exist.
 - Building the plugin without registering a package now fails saying so, instead of scanning
   the package `kotlin.Unit`, which is a class and matches nothing.
+- The published `javadoc` jar contained nothing but a manifest, because it was built from the
+  `javadoc` task and every source file is Kotlin. It is now rendered by Dokka.
 
 Set the date and add the release link below when the `v7.0.0` tag is cut.
 

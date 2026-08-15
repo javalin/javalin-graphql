@@ -4,6 +4,8 @@ plugins {
     `maven-publish`
     kotlin("jvm") version "2.2.20"
     id("io.gitlab.arturbosch.detekt") version "1.23.8"
+    id("org.jetbrains.dokka") version "2.2.0"
+    id("org.jetbrains.dokka-javadoc") version "2.2.0"
 }
 
 detekt {
@@ -25,6 +27,23 @@ version = System.getenv("GITHUB_REF_NAME")
 
 repositories {
     mavenCentral()
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+// `withJavadocJar()` fills the jar from the `javadoc` task, which has no Java source to read
+// here, so what shipped was 261 bytes containing nothing but a manifest. Dokka renders the KDoc
+// instead — the API this artifact documents is Kotlin.
+//
+// The jar is redirected rather than replaced by one of our own: `withJavadocJar()` is also what
+// registers the `javadocElements` variant, so a consumer resolving through Gradle module
+// metadata still finds the documentation. Declaring a separate task would publish the jar to
+// Maven and leave that variant missing.
+tasks.named<Jar>("javadocJar") {
+    from(tasks.dokkaGeneratePublicationJavadoc)
 }
 
 publishing {
@@ -91,11 +110,6 @@ kotlin {
 
 tasks.withType<JavaCompile>().configureEach {
     options.release.set(17)
-}
-
-java {
-    withJavadocJar()
-    withSourcesJar()
 }
 
 dependencies {
