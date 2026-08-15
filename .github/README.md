@@ -27,7 +27,7 @@ application. Schemas are generated from Kotlin (or Java) classes by
 
 > **7.0.0 is not released yet.** There is a `7.0.0-SNAPSHOT` to try, published to Javalin's
 > Reposilite. See [#7](https://github.com/javalin/javalin-graphql/issues/7) for the release
-> and Maven Central discussion.
+> and Maven Central discussion, and the [changelog](../CHANGELOG.md) for what is in it.
 
 Add the dependency:
 
@@ -75,20 +75,34 @@ Register the plugin:
 
 ```kotlin
 val app = Javalin.create { config ->
-    val options = GraphQLOptions("/graphql")
+    val plugin = GraphQLPluginBuilder("/graphql")
         .addPackage("com.example.schema")
         .register(QueryExample())
         .register(MutationExample())
         .register(SubscriptionExample())
+        .build()
 
-    config.registerPlugin(GraphQLPlugin(options))
+    config.registerPlugin(plugin)
 }
 
 app.start(7070)
 ```
 
+The same builder works from Java, where Kotlin's default arguments do not exist, because its
+constructor is annotated with `@JvmOverloads`:
+
+```java
+GraphQLPlugin plugin = new GraphQLPluginBuilder("/graphql")
+    .addPackage("com.example.schema")
+    .register(new QueryExample())
+    .build();
+
+Javalin.create(config -> config.registerPlugin(plugin)).start(7070);
+```
+
 GraphQL is now served under `/graphql`: `GET` returns GraphiQL, `POST` executes queries and
-mutations, and the WebSocket on the same path serves subscriptions.
+mutations, and the WebSocket on the same path serves subscriptions. Call `disableGraphiQL()`
+on the builder to leave out the `GET` route and serve only the endpoint.
 
 ### Queries
 
@@ -169,16 +183,20 @@ class QueryExample : QueryGraphql {
 }
 ```
 
-Context factories are passed to the builder, one for HTTP and one for subscriptions:
+Context factories are passed to the builder, one for HTTP and one for subscriptions. Both are
+optional and default to an empty context:
 
 ```kotlin
 val plugin = GraphQLPluginBuilder("/graphql", MyContextFactory(), MyWsContextFactory())
-    .add("com.example.schema")
+    .addPackage("com.example.schema")
     .register(QueryExample())
     .build()
 
 config.registerPlugin(plugin)
 ```
+
+> Writing a context factory from Java is not practical: `generateContext` is a `suspend`
+> function. Java applications use the defaults.
 
 ### JPMS
 
@@ -204,10 +222,39 @@ The reasoning behind the 7.0 design is recorded as ADRs in [`docs/adr`](../docs/
 | [ADR-002](../docs/adr/adr-002-subscription-protocol.md) | Serve subscriptions over graphql-transport-ws |
 | [ADR-003](../docs/adr/adr-003-json-mapping.md) | Parse GraphQL payloads without graphql-kotlin's sealed types |
 | [ADR-004](../docs/adr/adr-004-jpms.md) | Declare an automatic module name instead of shipping module-info |
+| [ADR-005](../docs/adr/adr-005-marker-interfaces.md) | Keep the QueryGraphql / MutationGraphql / SubscriptionGraphql markers |
 
 ### Migrating from 5.x
 
 **Registering the plugin.** `config.plugins.register(...)` became `config.registerPlugin(...)`.
+
+**`GraphQLOptions` is gone.** `GraphQLPluginBuilder` is the only entry point, and its context
+factories are optional:
+
+```diff
+- val options = GraphQLOptions("/graphql")
+-     .addPackage("com.example.schema")
+-     .register(QueryExample())
+- config.registerPlugin(GraphQLPlugin(options))
++ config.registerPlugin(
++     GraphQLPluginBuilder("/graphql")
++         .addPackage("com.example.schema")
++         .register(QueryExample())
++         .build()
++ )
+```
+
+`GraphQLPluginBuilder.create(options)` and the `GraphQLPlugin(options)` constructor went with
+it, as did `middleHandler`, `wsMiddleHandler`, `setMiddleHandler`, `setWSMiddleHandler` and the
+`context` constructor argument. Nothing ever read any of those four: a `middleHandler` set on
+the options was silently dropped when the builder was created from them. Javalin's own `before`
+and `beforeWs` do the job they promised.
+
+**`GraphQLPluginBuilder.add(...)` is now `addPackage(...)`,** the name `GraphQLOptions` used.
+
+**At least one package is now required.** The default used to be `kotlin.Unit`, which is a
+class rather than a package and matched nothing; a builder with no `addPackage` call now fails
+at start-up saying so.
 
 **Context is no longer a type of yours.** graphql-kotlin removed its `GraphQLContext` marker
 interface in favour of graphql-java's map-like `GraphQLContext`.
@@ -248,5 +295,5 @@ class is now treated as a GraphQL argument. Take a `DataFetchingEnvironment` ins
 frame, receive bare result data — which matched no standard. A client now has to send
 `connection_init` and `subscribe` messages. Off-the-shelf GraphQL clients do this for you.
 
-**Removed:** `GraphQLRun` (use `GraphQLRequestHandler.executeSubscription`) and
+**Removed:** `GraphQLOptions`, `GraphQLRun` (use `GraphQLRequestHandler.executeSubscription`) and
 `JavalinDataLoaderRegistryFactory` (use graphql-kotlin's `KotlinDataLoaderRegistryFactory`).

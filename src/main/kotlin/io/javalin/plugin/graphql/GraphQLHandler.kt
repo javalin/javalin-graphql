@@ -20,6 +20,7 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
@@ -79,6 +80,17 @@ class GraphQLHandler(private val graphQLBuilder: GraphQLPluginBuilder) {
     fun onClose(ctx: WsCloseContext) {
         acknowledged.remove(ctx.sessionId())
         operations.remove(ctx.sessionId())?.values?.forEach { it.cancel() }
+    }
+
+    /**
+     * Cancels every subscription still running and releases the scope. Called once, when the
+     * server is stopping. The scope is not reusable afterwards, which is fine: a Javalin
+     * instance cannot be restarted.
+     */
+    fun shutdown() {
+        scope.cancel("Javalin is stopping")
+        operations.clear()
+        acknowledged.clear()
     }
 
     private fun connectionInit(ctx: WsMessageContext) {

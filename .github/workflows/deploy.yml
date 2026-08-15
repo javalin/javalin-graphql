@@ -26,9 +26,32 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # The build derives the version from the tag, so a tag that is not a version would be
+      # published verbatim. Reject it before anything is built.
+      - name: Check the tag is a version tag
+        if: github.ref_type == 'tag'
+        run: |
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "::error::Tag '$GITHUB_REF_NAME' is not a version tag (expected vMAJOR.MINOR.PATCH)."
+            exit 1
+          fi
+
       - name: Read version
         id: version
         run: echo "value=$(./gradlew -q printVersion)" >> "$GITHUB_OUTPUT"
+
+      # If the derivation ever falls back to the snapshot default on a tag build — a missing
+      # GITHUB_REF_TYPE, a checkout that lost the tag, a change to build.gradle.kts — this run
+      # would quietly overwrite a snapshot instead of releasing. Fail instead.
+      - name: Check the version matches the tag
+        if: github.ref_type == 'tag'
+        run: |
+          expected="${GITHUB_REF_NAME#v}"
+          actual="${{ steps.version.outputs.value }}"
+          if [[ "$actual" != "$expected" ]]; then
+            echo "::error::Tag '$GITHUB_REF_NAME' would publish '$actual', expected '$expected'."
+            exit 1
+          fi
 
       # A manual run may only publish a snapshot; releasing is what the tag is for.
       - name: Refuse to release without a tag
