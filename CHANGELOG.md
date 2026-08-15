@@ -8,7 +8,7 @@ tracks Javalin's: 7.x targets Javalin 7.x. Releases up to 5.x predate this file.
 
 ## [Unreleased]
 
-## [7.0.0] - 2026-08-15
+## [7.0.0] - unreleased
 
 The first release for Javalin 7 and graphql-kotlin 10. Everything under *Changed* and *Removed*
 is a breaking change; the README has a
@@ -75,5 +75,6 @@ is a breaking change; the README has a
 - Building the plugin without registering a package now fails saying so, instead of scanning
   the package `kotlin.Unit`, which is a class and matches nothing.
 
-[Unreleased]: https://github.com/javalin/javalin-graphql/compare/v7.0.0...HEAD
-[7.0.0]: https://github.com/javalin/javalin-graphql/releases/tag/v7.0.0
+Set the date and add the release link below when the `v7.0.0` tag is cut.
+
+[Unreleased]: https://github.com/javalin/javalin-graphql/commits/main/
