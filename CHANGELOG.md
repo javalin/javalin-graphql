@@ -8,7 +8,7 @@ tracks Javalin's: 7.x targets Javalin 7.x. Releases up to 5.x predate this file.
 
 ## [Unreleased]
 
-## [7.0.0] - unreleased
+## [7.0.0] - 2026-08-15
 
 The first release for Javalin 7 and graphql-kotlin 10. Everything under *Changed* and *Removed*
 is a breaking change; the README has a
@@ -77,6 +77,5 @@ is a breaking change; the README has a
 - The published `javadoc` jar contained nothing but a manifest, because it was built from the
   `javadoc` task and every source file is Kotlin. It is now rendered by Dokka.
 
-Set the date and add the release link below when the `v7.0.0` tag is cut.
-
-[Unreleased]: https://github.com/javalin/javalin-graphql/commits/main/
+[Unreleased]: https://github.com/javalin/javalin-graphql/compare/v7.0.0...HEAD
+[7.0.0]: https://github.com/javalin/javalin-graphql/releases/tag/v7.0.0

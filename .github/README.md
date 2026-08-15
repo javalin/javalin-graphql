@@ -25,9 +25,9 @@ application. Schemas are generated from Kotlin (or Java) classes by
 
 ### Getting Started
 
-> **7.0.0 is not released yet.** There is a `7.0.0-SNAPSHOT` to try, published to Javalin's
-> Reposilite. See [#7](https://github.com/javalin/javalin-graphql/issues/7) for the release
-> and Maven Central discussion, and the [changelog](../CHANGELOG.md) for what is in it.
+> **7.0.0 is published to Javalin's Reposilite, not to Maven Central.** See
+> [#7](https://github.com/javalin/javalin-graphql/issues/7) for the Maven Central discussion,
+> and the [changelog](../CHANGELOG.md) for what is in this release.
 
 Add the dependency:
 
@@ -36,11 +36,11 @@ Add the dependency:
 
 ```kotlin
 repositories {
-    maven("https://maven.reposilite.com/snapshots")
+    maven("https://maven.reposilite.com/releases")
 }
 
 dependencies {
-    implementation("io.javalin.community.graphql:javalin-graphql:7.0.0-SNAPSHOT")
+    implementation("io.javalin.community.graphql:javalin-graphql:7.0.0")
 }
 ```
 
@@ -52,16 +52,15 @@ dependencies {
 ```xml
 <repositories>
     <repository>
-        <id>reposilite-snapshots</id>
-        <url>https://maven.reposilite.com/snapshots</url>
-        <snapshots><enabled>true</enabled></snapshots>
+        <id>reposilite-releases</id>
+        <url>https://maven.reposilite.com/releases</url>
     </repository>
 </repositories>
 
 <dependency>
     <groupId>io.javalin.community.graphql</groupId>
     <artifactId>javalin-graphql</artifactId>
-    <version>7.0.0-SNAPSHOT</version>
+    <version>7.0.0</version>
 </dependency>
 ```
 
